@@ -159,10 +159,12 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
     <section className="border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-950">Active Loans</h2>
+          <h2 className="text-lg font-semibold text-slate-950">
+            Returns and Active Loans
+          </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Return flow includes loan date, due date, and return date overrides
-            for fine testing.
+            Mark borrowed books as returned, adjust dates for fine testing, and
+            export overdue loans.
           </p>
         </div>
         <a
@@ -243,7 +245,7 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
           <table className="w-full min-w-[1240px] text-left text-sm">
             <thead className="border-b border-slate-200 text-slate-500">
               <tr>
-                <th className="py-2 pr-4 font-semibold">Code</th>
+                <th className="py-2 pr-4 font-semibold">Loan Ref</th>
                 <th className="py-2 pr-4 font-semibold">Member</th>
                 <th className="py-2 pr-4 font-semibold">Book</th>
                 <th className="py-2 pr-4 font-semibold">Current Due Date</th>

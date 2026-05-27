@@ -26,8 +26,11 @@ function normalizeLoginIdentifier(data: z.infer<typeof loginSchema>) {
   return String(data.identifier ?? data.email ?? "").trim().toLowerCase();
 }
 
-function isEmailIdentifier(identifier: string) {
-  return identifier.includes("@");
+function invalidMemberLogin() {
+  return NextResponse.json(
+    { error: "Invalid email or password." },
+    { status: 401 },
+  );
 }
 
 export async function POST(request: Request) {
@@ -67,34 +70,18 @@ export async function POST(request: Request) {
 
       user = await ensureLibrarianUser();
     } else {
-      if (isEmailIdentifier(identifier)) {
-        user = await prisma.user.findUnique({
-          where: { email: identifier },
-        });
-      } else {
-        if (identifier.length < 8) {
-          return NextResponse.json(
-            { error: "Invalid loan code or password." },
-            { status: 401 },
-          );
-        }
+      const email = z.string().email().safeParse(identifier);
 
-        const loan = await prisma.loan.findFirst({
-          where: {
-            id: { startsWith: identifier.slice(0, 8) },
-          },
-          include: { user: true },
-          orderBy: { loan_date: "desc" },
-        });
-
-        user = loan?.user;
+      if (!email.success) {
+        return invalidMemberLogin();
       }
 
+      user = await prisma.user.findUnique({
+        where: { email: email.data },
+      });
+
       if (!user || user.role !== UserRole.MEMBER) {
-        return NextResponse.json(
-          { error: "Invalid loan code or password." },
-          { status: 401 },
-        );
+        return invalidMemberLogin();
       }
 
       const isValidPassword = await bcrypt.compare(
@@ -103,10 +90,7 @@ export async function POST(request: Request) {
       );
 
       if (!isValidPassword) {
-        return NextResponse.json(
-          { error: "Invalid loan code or password." },
-          { status: 401 },
-        );
+        return invalidMemberLogin();
       }
     }
 

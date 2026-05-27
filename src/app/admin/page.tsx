@@ -45,8 +45,8 @@ export default async function AdminPage() {
         },
         {
           href: "#loans",
-          label: "Active Loans",
-          description: "Filter and mark returns",
+          label: "Returns",
+          description: "Filter active loans and mark returns",
         },
         {
           href: "/api/reports/overdue",

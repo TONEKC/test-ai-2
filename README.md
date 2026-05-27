@@ -6,9 +6,7 @@ Single-repo Next.js App Router project for a library lending system using Prisma
 
 Implemented:
 
-- Member registration and member login with loan code plus password. Email is
-  still accepted as a fallback for a newly registered member who has no loan
-  code yet.
+- Member registration and member login with email plus password.
 - Librarian login at `/admin` with `LIBRARIAN_USERNAME`/`LIBRARIAN_PASSWORD`
   from environment variables.
 - Catalog browsing, borrowing, active loans, and loan history behind member
@@ -123,6 +121,6 @@ BASE_URL="http://[::1]:3000" npm run test:live
 ```
 
 `test:live` registers members, creates test books, verifies novel/textbook due
-dates, loan-code login, wrong-password rejection, 3-loan limit, overdue blocking,
-same-day fine, Friday-to-Monday fine, weekday-only fine, out-of-stock rejection,
-and overdue PDF export.
+dates, email login, loan-code login rejection, wrong-password rejection, 3-loan
+limit, overdue blocking, same-day fine, Friday-to-Monday fine, weekday-only fine,
+out-of-stock rejection, and overdue PDF export.

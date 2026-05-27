@@ -19,7 +19,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
   const title = isAdmin ? "Librarian Login" : "Member Access";
   const description = isAdmin
     ? "Log in with the librarian username and password."
-    : "Register a member account or log in with a loan code to view loans and borrow from the catalog.";
+    : "Register a member account or log in with email and password to view loans and borrow from the catalog.";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,11 +40,17 @@ export function AuthPanel({ mode }: AuthPanelProps) {
             phone: String(form.get("phone") ?? ""),
             password: String(form.get("password") ?? ""),
           }
-        : {
-            identifier: String(form.get("identifier") ?? ""),
-            password: String(form.get("password") ?? ""),
-            role: isAdmin ? "LIBRARIAN" : "MEMBER",
-          };
+        : isAdmin
+          ? {
+              identifier: String(form.get("identifier") ?? ""),
+              password: String(form.get("password") ?? ""),
+              role: "LIBRARIAN",
+            }
+          : {
+              email: String(form.get("email") ?? ""),
+              password: String(form.get("password") ?? ""),
+              role: "MEMBER",
+            };
 
     try {
       const response = await fetch(endpoint, {
@@ -179,14 +185,14 @@ export function AuthPanel({ mode }: AuthPanelProps) {
           ) : (
             <label className="block">
               <span className="text-sm font-medium text-slate-800">
-                {isAdmin ? "Username" : "Loan code"}
+                {isAdmin ? "Username" : "Email"}
               </span>
               <input
-                name="identifier"
-                type="text"
+                name={isAdmin ? "identifier" : "email"}
+                type={isAdmin ? "text" : "email"}
                 required
                 className="mt-1 h-11 w-full border border-slate-300 px-3 text-slate-950 outline-none transition focus:border-emerald-700"
-                placeholder={isAdmin ? "admin" : "A1B2C3D4"}
+                placeholder={isAdmin ? "admin" : "you@email.com"}
               />
             </label>
           )}
@@ -217,7 +223,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
             {isLoading
               ? "Please wait..."
               : isAdmin
-            ? "Login as Librarian"
+                ? "Login as Librarian"
                 : authMode === "register"
                   ? "Create Account"
                   : "Enter Library"}

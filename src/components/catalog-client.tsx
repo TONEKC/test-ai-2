@@ -81,7 +81,8 @@ export function CatalogClient({ books, isMember }: CatalogClientProps) {
         <div className="border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
           <div className="font-semibold">Borrowed successfully</div>
           <div className="mt-1">
-            Loan code: <span className="font-semibold">{borrowResult.code}</span>
+            Loan reference:{" "}
+            <span className="font-semibold">{borrowResult.code}</span>
           </div>
           <div>
             Due date:{" "}

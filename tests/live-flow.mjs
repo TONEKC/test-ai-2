@@ -302,12 +302,22 @@ async function main() {
   const wrongPassword = await request("/api/auth/login", {
     method: "POST",
     body: {
-      identifier: novelLoan.code,
+      email: `live-${runId}@example.com`,
       password: "wrong-password",
       role: "MEMBER",
     },
   });
   expectStatus(wrongPassword, 401, "member wrong password rejection");
+
+  const emailLogin = await request("/api/auth/login", {
+    method: "POST",
+    body: {
+      email: `live-${runId}@example.com`,
+      password,
+      role: "MEMBER",
+    },
+  });
+  expectStatus(emailLogin, 200, "member email login");
 
   const loanCodeLogin = await request("/api/auth/login", {
     method: "POST",
@@ -317,7 +327,7 @@ async function main() {
       role: "MEMBER",
     },
   });
-  expectStatus(loanCodeLogin, 200, "member loan-code login");
+  expectStatus(loanCodeLogin, 401, "member loan-code login rejection");
 
   const thirdLoan = (await borrow(memberCookie, books.generalA.id)).data.loan;
   const fourthBorrow = await borrow(memberCookie, books.generalB.id, 400);

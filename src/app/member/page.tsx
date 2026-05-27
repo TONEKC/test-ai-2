@@ -88,7 +88,7 @@ export default async function MemberPage() {
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead className="border-b border-slate-200 text-slate-500">
                 <tr>
-                  <th className="py-2 pr-4 font-semibold">Code</th>
+                  <th className="py-2 pr-4 font-semibold">Loan Ref</th>
                   <th className="py-2 pr-4 font-semibold">Book</th>
                   <th className="py-2 pr-4 font-semibold">Loan Date</th>
                   <th className="py-2 pr-4 font-semibold">Due Date</th>
