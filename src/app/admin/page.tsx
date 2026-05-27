@@ -59,7 +59,7 @@ export default async function AdminPage() {
         },
       ]}
     >
-      <div id="books" className="col-span-12 scroll-mt-6">
+      <div id="books" className="col-span-12 min-w-0 scroll-mt-6">
         <AdminBooks
           initialBooks={books.map((book) => ({
             id: book.id,
@@ -71,7 +71,7 @@ export default async function AdminPage() {
           }))}
         />
       </div>
-      <div id="loans" className="col-span-12 scroll-mt-6">
+      <div id="loans" className="col-span-12 min-w-0 scroll-mt-6">
         <AdminLoans
           initialLoans={loans.map((loan) => ({
             id: loan.id,

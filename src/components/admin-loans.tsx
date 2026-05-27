@@ -26,15 +26,50 @@ type AdminLoansProps = {
   initialLoans: AdminLoan[];
 };
 
+type LoanSortKey =
+  | "loan_date"
+  | "due_date"
+  | "return_date"
+  | "member"
+  | "book"
+  | "status"
+  | "fine";
+type LoanStatusFilter = "ALL" | AdminLoan["status"];
+type SortDirection = "asc" | "desc";
+
 function inputDate(value: string) {
   return new Date(value).toISOString().slice(0, 10);
+}
+
+function compareText(first: string, second: string) {
+  return first.localeCompare(second, undefined, { sensitivity: "base" });
+}
+
+function compareNullableDate(first: string | null, second: string | null) {
+  if (!first && !second) {
+    return 0;
+  }
+
+  if (!first) {
+    return 1;
+  }
+
+  if (!second) {
+    return -1;
+  }
+
+  return new Date(first).getTime() - new Date(second).getTime();
 }
 
 export function AdminLoans({ initialLoans }: AdminLoansProps) {
   const router = useRouter();
   const { notify } = useToast();
   const [loans, setLoans] = useState(initialLoans);
-  const [memberFilter, setMemberFilter] = useState("");
+  const [loanFilter, setLoanFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<LoanStatusFilter>("ALL");
+  const [loanSortKey, setLoanSortKey] = useState<LoanSortKey>("due_date");
+  const [loanSortDirection, setLoanSortDirection] =
+    useState<SortDirection>("asc");
   const [returnDates, setReturnDates] = useState<
     Record<string, { loan_date: string; due_date: string; return_date: string }>
   >(() =>
@@ -55,32 +90,70 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
   );
 
   const filteredLoans = useMemo(() => {
-    const term = memberFilter.trim().toLowerCase();
+    const term = loanFilter.trim().toLowerCase();
 
-    if (!term) {
-      return loans;
-    }
-
-    return loans.filter(
-      (loan) =>
+    return loans.filter((loan) => {
+      const matchesStatus =
+        statusFilter === "ALL" || loan.status === statusFilter;
+      const matchesTerm =
+        !term ||
+        loan.code.toLowerCase().includes(term) ||
         loan.user.name.toLowerCase().includes(term) ||
-        loan.user.email.toLowerCase().includes(term),
-    );
-  }, [loans, memberFilter]);
+        loan.user.email.toLowerCase().includes(term) ||
+        loan.book.title.toLowerCase().includes(term) ||
+        loan.status.toLowerCase().includes(term);
+
+      return matchesStatus && matchesTerm;
+    });
+  }, [loanFilter, loans, statusFilter]);
+
+  const sortedLoans = useMemo(() => {
+    const direction = loanSortDirection === "asc" ? 1 : -1;
+
+    return [...filteredLoans].sort((first, second) => {
+      let result = 0;
+
+      if (loanSortKey === "member") {
+        result =
+          compareText(first.user.name, second.user.name) ||
+          compareText(first.user.email, second.user.email);
+      } else if (loanSortKey === "book") {
+        result = compareText(first.book.title, second.book.title);
+      } else if (loanSortKey === "status") {
+        result = compareText(first.status, second.status);
+      } else if (loanSortKey === "fine") {
+        result = Number(first.fine_amount) - Number(second.fine_amount);
+      } else if (loanSortKey === "return_date") {
+        result = compareNullableDate(first.return_date, second.return_date);
+      } else {
+        result =
+          new Date(first[loanSortKey]).getTime() -
+          new Date(second[loanSortKey]).getTime();
+      }
+
+      return result * direction;
+    });
+  }, [filteredLoans, loanSortDirection, loanSortKey]);
 
   const activeLoans = useMemo(() => {
-    return [...filteredLoans]
+    return sortedLoans
       .filter((loan) => loan.status === "ACTIVE")
-      .sort(
-        (first, second) =>
-          new Date(first.due_date).getTime() -
-          new Date(second.due_date).getTime(),
-      );
-  }, [filteredLoans]);
+      .sort((first, second) => {
+        if (loanSortKey !== "due_date") {
+          return 0;
+        }
+
+        return loanSortDirection === "asc"
+          ? new Date(first.due_date).getTime() -
+              new Date(second.due_date).getTime()
+          : new Date(second.due_date).getTime() -
+              new Date(first.due_date).getTime();
+      });
+  }, [loanSortDirection, loanSortKey, sortedLoans]);
 
   const returnedLoans = useMemo(() => {
-    return filteredLoans.filter((loan) => loan.status === "RETURNED");
-  }, [filteredLoans]);
+    return sortedLoans.filter((loan) => loan.status === "RETURNED");
+  }, [sortedLoans]);
 
   const overdueLoans = useMemo(() => {
     const today = startOfLocalDay(new Date());
@@ -90,7 +163,7 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
     );
   }, [activeLoans]);
 
-  const overdueFineTotal = useMemo(() => {
+  const activeOverdueFineTotal = useMemo(() => {
     const today = new Date();
 
     return overdueLoans.reduce(
@@ -98,6 +171,13 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
       0,
     );
   }, [overdueLoans]);
+  const returnedFineTotal = useMemo(() => {
+    return returnedLoans.reduce(
+      (total, loan) => total + Number(loan.fine_amount),
+      0,
+    );
+  }, [returnedLoans]);
+  const totalFineAmount = activeOverdueFineTotal + returnedFineTotal;
 
   function setLoanDate(
     loanId: string,
@@ -238,12 +318,52 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
         </a>
       </div>
 
-      <input
-        value={memberFilter}
-        onChange={(event) => setMemberFilter(event.target.value)}
-        placeholder="Filter by member name or email"
-        className="mt-4 h-10 w-full border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
-      />
+      <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_160px_210px]">
+        <input
+          value={loanFilter}
+          onChange={(event) => setLoanFilter(event.target.value)}
+          placeholder="Filter by member, email, book, loan ref, or status"
+          className="h-10 min-w-0 border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
+        />
+        <select
+          value={statusFilter}
+          onChange={(event) =>
+            setStatusFilter(event.target.value as LoanStatusFilter)
+          }
+          className="h-10 border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
+        >
+          <option value="ALL">All statuses</option>
+          <option value="ACTIVE">Active</option>
+          <option value="RETURNED">Returned</option>
+        </select>
+        <select
+          value={`${loanSortKey}:${loanSortDirection}`}
+          onChange={(event) => {
+            const [key, direction] = event.target.value.split(":") as [
+              LoanSortKey,
+              SortDirection,
+            ];
+            setLoanSortKey(key);
+            setLoanSortDirection(direction);
+          }}
+          className="h-10 border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
+        >
+          <option value="due_date:asc">Due date old-new</option>
+          <option value="due_date:desc">Due date new-old</option>
+          <option value="loan_date:desc">Loan date new-old</option>
+          <option value="loan_date:asc">Loan date old-new</option>
+          <option value="member:asc">Member A-Z</option>
+          <option value="member:desc">Member Z-A</option>
+          <option value="book:asc">Book A-Z</option>
+          <option value="book:desc">Book Z-A</option>
+          <option value="status:asc">Status A-Z</option>
+          <option value="status:desc">Status Z-A</option>
+          <option value="fine:desc">Fine high-low</option>
+          <option value="fine:asc">Fine low-high</option>
+          <option value="return_date:desc">Return date new-old</option>
+          <option value="return_date:asc">Return date old-new</option>
+        </select>
+      </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <LoanCountCard label="All loans" value={filteredLoans.length} />
@@ -252,7 +372,7 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
         <LoanCountCard label="Overdue" value={overdueLoans.length} />
         <LoanCountCard
           label="Overdue fines"
-          value={`${overdueFineTotal.toLocaleString()} THB`}
+          value={`${totalFineAmount.toLocaleString()} THB`}
         />
       </div>
 
@@ -265,8 +385,9 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
             </p>
           </div>
           <span className="text-sm font-semibold text-amber-800">
-            {overdueLoans.length} overdue / {overdueFineTotal.toLocaleString()}{" "}
-            THB
+            {overdueLoans.length} active overdue /{" "}
+            {activeOverdueFineTotal.toLocaleString()} THB current /{" "}
+            {returnedFineTotal.toLocaleString()} THB returned
           </span>
         </div>
         {overdueLoans.length ? (
@@ -411,11 +532,11 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
             </p>
           </div>
           <span className="text-sm font-semibold text-slate-700">
-            {filteredLoans.length} records
+            {sortedLoans.length} records
           </span>
         </div>
 
-        {filteredLoans.length ? (
+        {sortedLoans.length ? (
           <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[1080px] text-left text-sm">
               <thead className="border-b border-slate-200 text-slate-500">
@@ -431,7 +552,7 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
                 </tr>
               </thead>
               <tbody>
-                {filteredLoans.map((loan) => (
+                {sortedLoans.map((loan) => (
                   <tr key={loan.id} className="border-b border-slate-200">
                     <td className="py-3 pr-4 font-semibold text-slate-950">
                       {loan.code}

@@ -69,7 +69,7 @@ export function AppShell({
         </aside>
 
         <div className="col-span-12 grid min-w-0 grid-cols-12 gap-5 lg:col-span-9 lg:gap-6">
-          <header className="col-span-12 grid grid-cols-12 gap-4 border border-slate-200 bg-white p-5 shadow-sm">
+          <header className="col-span-12 grid min-w-0 grid-cols-12 gap-4 border border-slate-200 bg-white p-5 shadow-sm">
             <div className="col-span-12 lg:col-span-9">
               <p className="text-sm font-semibold uppercase text-amber-700">
                 {roleLabel} Dashboard
@@ -91,7 +91,7 @@ export function AppShell({
             </div>
           </header>
 
-          <div className="col-span-12 grid grid-cols-12 gap-5 lg:gap-6">
+          <div className="col-span-12 grid min-w-0 grid-cols-12 gap-5 lg:gap-6">
             {children}
           </div>
         </div>

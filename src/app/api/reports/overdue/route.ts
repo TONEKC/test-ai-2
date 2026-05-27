@@ -23,19 +23,25 @@ const rowFontSize = 9;
 const headerFontSize = 9;
 const lineHeight = 11;
 const columns = [
-  { label: "Member", width: 105 },
-  { label: "Email", width: 135 },
-  { label: "Overdue Book", width: 190 },
-  { label: "Due Date", width: 70 },
-  { label: "Book Fine", width: 75 },
-  { label: "Member Total", width: 85 },
+  { label: "Member", width: 95 },
+  { label: "Email", width: 120 },
+  { label: "Book", width: 160 },
+  { label: "Status", width: 80 },
+  { label: "Due Date", width: 65 },
+  { label: "Return Date", width: 70 },
+  { label: "Fine", width: 65 },
+  { label: "Member Total", width: 80 },
 ];
 
 type ReportRow = {
+  userId: string;
   member: string;
   email: string;
   book: string;
+  status: string;
   dueDate: string;
+  returnDate: string;
+  fineAmount: number;
   fine: string;
   memberTotal: string;
 };
@@ -137,6 +143,7 @@ function drawReportTitle(
   now: Date,
   activeCount: number,
   overdueCount: number,
+  returnedFineCount: number,
   totalFines: number,
 ) {
   page.drawText("Overdue Library Report", {
@@ -160,7 +167,7 @@ function drawReportTitle(
     font,
     color: rgb(0.38, 0.43, 0.52),
   });
-  page.drawText(`Overdue loans: ${overdueCount}`, {
+  page.drawText(`Active overdue: ${overdueCount}`, {
     x: 210,
     y: 514,
     size: 10,
@@ -174,6 +181,13 @@ function drawReportTitle(
     font,
     color: rgb(0.38, 0.43, 0.52),
   });
+  page.drawText(`Returned with fines: ${returnedFineCount}`, {
+    x: 520,
+    y: 514,
+    size: 10,
+    font,
+    color: rgb(0.38, 0.43, 0.52),
+  });
 }
 
 function rowToValues(row: ReportRow) {
@@ -181,7 +195,9 @@ function rowToValues(row: ReportRow) {
     row.member,
     row.email,
     row.book,
+    row.status,
     row.dueDate,
+    row.returnDate,
     row.fine,
     row.memberTotal,
   ];
@@ -195,48 +211,78 @@ export async function GET() {
   }
 
   const now = new Date();
-  const activeLoans = await prisma.loan.findMany({
-    where: {
-      status: LoanStatus.ACTIVE,
-    },
+  const loans = await prisma.loan.findMany({
     include: { user: true, book: true },
     orderBy: [{ due_date: "asc" }],
   });
+  const activeLoans = loans.filter((loan) => loan.status === LoanStatus.ACTIVE);
   const overdueLoans = activeLoans.filter((loan) =>
     isDateOverdue(loan.due_date, now),
   );
-  const finesByMember = overdueLoans.reduce<Record<string, number>>(
-    (totals, loan) => {
-      totals[loan.userId] =
-        (totals[loan.userId] ?? 0) + calculateOverdueFine(loan.due_date, now);
+  const returnedFineLoans = loans.filter(
+    (loan) =>
+      loan.status === LoanStatus.RETURNED && Number(loan.fine_amount) > 0,
+  );
+  const activeRows: ReportRow[] = overdueLoans.map((loan) => {
+        const fine = calculateOverdueFine(loan.due_date, now);
+
+        return {
+          userId: loan.userId,
+          member: loan.user.name,
+          email: loan.user.email,
+          book: loan.book.title,
+          status: "Active overdue",
+          dueDate: loan.due_date.toLocaleDateString(),
+          returnDate: "-",
+          fineAmount: fine,
+          fine: `${fine.toLocaleString()} THB`,
+          memberTotal: "",
+        };
+      });
+  const returnedRows: ReportRow[] = returnedFineLoans.map((loan) => {
+    const fine = Number(loan.fine_amount);
+
+    return {
+      userId: loan.userId,
+      member: loan.user.name,
+      email: loan.user.email,
+      book: loan.book.title,
+      status: "Returned late",
+      dueDate: loan.due_date.toLocaleDateString(),
+      returnDate: loan.return_date?.toLocaleDateString() ?? "-",
+      fineAmount: fine,
+      fine: `${fine.toLocaleString()} THB`,
+      memberTotal: "",
+    };
+  });
+  const reportRows = [...activeRows, ...returnedRows];
+  const finesByMember = reportRows.reduce<Record<string, number>>(
+    (totals, row) => {
+      totals[row.userId] = (totals[row.userId] ?? 0) + row.fineAmount;
 
       return totals;
     },
     {},
   );
-  const totalFines = overdueLoans.reduce(
-    (total, loan) => total + calculateOverdueFine(loan.due_date, now),
+  const totalFines = reportRows.reduce(
+    (total, row) => total + row.fineAmount,
     0,
   );
-  const rows: ReportRow[] = overdueLoans.length
-    ? overdueLoans.map((loan) => {
-        const fine = calculateOverdueFine(loan.due_date, now);
-
-        return {
-          member: loan.user.name,
-          email: loan.user.email,
-          book: loan.book.title,
-          dueDate: loan.due_date.toLocaleDateString(),
-          fine: `${fine.toLocaleString()} THB`,
-          memberTotal: `${finesByMember[loan.userId].toLocaleString()} THB`,
-        };
-      })
+  const rows: ReportRow[] = reportRows.length
+    ? reportRows.map((row) => ({
+        ...row,
+        memberTotal: `${finesByMember[row.userId].toLocaleString()} THB`,
+      }))
     : [
         {
+          userId: "-",
           member: "No overdue loans",
           email: "-",
-          book: "Only active loans past due date appear in this report.",
+          book: "Active overdue loans and returned loans with fines appear here.",
+          status: "-",
           dueDate: "-",
+          returnDate: "-",
+          fineAmount: 0,
           fine: "0 THB",
           memberTotal: "0 THB",
         },
@@ -255,6 +301,7 @@ export async function GET() {
     now,
     activeLoans.length,
     overdueLoans.length,
+    returnedFineLoans.length,
     totalFines,
   );
   drawHeader(page, font, y);
