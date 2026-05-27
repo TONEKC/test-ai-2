@@ -20,7 +20,7 @@ export default async function Home() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6">
         <nav className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-5">
           <Link href="/" className="text-lg font-semibold text-slate-950">
-            Library Lending System
+            Enchanted Library
           </Link>
           <div className="flex items-center gap-2">
             {user ? (
@@ -56,12 +56,12 @@ export default async function Home() {
         </nav>
 
         <section className="space-y-3">
-          <p className="text-sm font-semibold uppercase text-emerald-700">
-            Catalog
-          </p>
-          <h1 className="max-w-3xl text-4xl font-semibold text-slate-950 sm:text-5xl">
-            Browse books and borrow from the live collection.
-          </h1>
+            <p className="text-sm font-semibold uppercase text-amber-700">
+              Catalog
+            </p>
+            <h1 className="max-w-3xl text-4xl font-semibold text-slate-950 sm:text-5xl">
+            Browse the stacks and borrow from the live collection.
+            </h1>
           <p className="max-w-2xl text-base leading-7 text-slate-600">
             Members can borrow up to 3 active books. Borrowing is blocked when a
             member has overdue active loans or when no copies are available.

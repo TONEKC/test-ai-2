@@ -18,8 +18,8 @@ export function AuthPanel({ mode }: AuthPanelProps) {
   const isAdmin = mode === "admin";
   const title = isAdmin ? "Librarian Login" : "Member Access";
   const description = isAdmin
-    ? "Use the librarian credentials configured in Vercel environment variables."
-    : "Register a member account or log in to view your lending dashboard.";
+    ? "Enter the restricted stacks with the librarian credentials configured in Vercel."
+    : "Register a member account or log in to view your loans and borrow from the catalog.";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,8 +70,8 @@ export function AuthPanel({ mode }: AuthPanelProps) {
   return (
     <section className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10 sm:px-6 lg:grid lg:grid-cols-[1fr_420px] lg:items-start lg:py-16">
       <div className="space-y-5">
-        <p className="text-sm font-semibold uppercase text-emerald-700">
-          Library Lending System
+        <p className="text-sm font-semibold uppercase text-amber-700">
+          Enchanted Library
         </p>
         <div className="space-y-3">
           <h1 className="text-4xl font-semibold text-slate-950 sm:text-5xl">
@@ -82,22 +82,22 @@ export function AuthPanel({ mode }: AuthPanelProps) {
           </p>
         </div>
         <div className="grid gap-3 text-sm text-slate-700 sm:grid-cols-3">
-          <div className="border border-slate-200 bg-white p-4">
+          <div className="border border-amber-200 bg-white/90 p-4">
             <div className="font-semibold text-slate-950">Secure Session</div>
             <div className="mt-1 text-slate-600">HTTP-only JWT cookie</div>
           </div>
-          <div className="border border-slate-200 bg-white p-4">
+          <div className="border border-amber-200 bg-white/90 p-4">
             <div className="font-semibold text-slate-950">Prisma Ready</div>
             <div className="mt-1 text-slate-600">Supabase PostgreSQL</div>
           </div>
-          <div className="border border-slate-200 bg-white p-4">
+          <div className="border border-amber-200 bg-white/90 p-4">
             <div className="font-semibold text-slate-950">Vercel CI/CD</div>
             <div className="mt-1 text-slate-600">Deploy by Git push</div>
           </div>
         </div>
       </div>
 
-      <div className="border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="border border-amber-200 bg-white/95 p-5 shadow-sm">
         {!isAdmin ? (
           <div className="mb-5 grid grid-cols-2 border border-slate-200 p-1">
             <button
@@ -151,9 +151,15 @@ export function AuthPanel({ mode }: AuthPanelProps) {
                 <input
                   name="phone"
                   required
-                  minLength={6}
+                  inputMode="numeric"
+                  pattern="[0-9]{9,15}"
+                  title="Phone must contain 9 to 15 digits."
+                  onInput={(event) => {
+                    event.currentTarget.value =
+                      event.currentTarget.value.replace(/\D/g, "");
+                  }}
                   className="mt-1 h-11 w-full border border-slate-300 px-3 text-slate-950 outline-none transition focus:border-emerald-700"
-                  placeholder="Phone number"
+                  placeholder="Digits only"
                 />
               </label>
             </>

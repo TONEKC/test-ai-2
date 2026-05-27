@@ -13,7 +13,10 @@ import { prisma } from "@/lib/prisma";
 const registerSchema = z.object({
   name: z.string().trim().min(2, "Name is required."),
   email: z.string().trim().email("A valid email is required.").toLowerCase(),
-  phone: z.string().trim().min(6, "Phone is required."),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^[0-9]{9,15}$/, "Phone must contain 9 to 15 digits only."),
   password: z.string().min(8, "Password must be at least 8 characters."),
 });
 

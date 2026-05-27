@@ -32,14 +32,14 @@ export default async function MemberPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
         <nav className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-5">
           <Link href="/" className="text-lg font-semibold text-slate-950">
-            Library Lending System
+            Enchanted Library
           </Link>
           <LogoutButton />
         </nav>
 
         <section className="grid gap-5 lg:grid-cols-[320px_1fr]">
           <aside className="border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-semibold text-emerald-700">
+            <p className="text-sm font-semibold text-amber-700">
               Member Account
             </p>
             <h1 className="mt-2 text-2xl font-semibold text-slate-950">
