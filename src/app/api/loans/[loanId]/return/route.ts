@@ -88,6 +88,7 @@ export async function POST(
         loan_date: loan.loan_date,
         due_date: loan.due_date,
         return_date: loan.return_date,
+        status: loan.status,
         fine_amount: Number(loan.fine_amount),
         book: loan.book,
         user: loan.user,

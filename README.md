@@ -13,6 +13,8 @@ Implemented:
   login.
 - Book management behind librarian login, including add, edit modal, and delete
   for books without loan history.
+- Librarian loan workspace with member filtering, active returns, overdue
+  loans, and all loan records across active and returned status.
 - Borrowing validations: max 3 active loans, no borrowing with an active
   overdue loan, and no borrowing when available copies are 0.
 - Return flow with editable `loan_date`, `due_date`, and `return_date` for

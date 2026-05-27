@@ -20,14 +20,13 @@ export default async function AdminPage() {
     return <AuthPanel mode="admin" />;
   }
 
-  const [books, activeLoans] = await Promise.all([
+  const [books, loans] = await Promise.all([
     prisma.book.findMany({
       orderBy: [{ title: "asc" }, { author: "asc" }],
     }),
     prisma.loan.findMany({
-      where: { status: "ACTIVE" },
       include: { user: true, book: true },
-      orderBy: { due_date: "asc" },
+      orderBy: { loan_date: "desc" },
     }),
   ]);
 
@@ -47,6 +46,11 @@ export default async function AdminPage() {
           href: "#loans",
           label: "Returns",
           description: "Filter active loans and mark returns",
+        },
+        {
+          href: "#all-loans",
+          label: "All Loans",
+          description: "Review every loan record",
         },
         {
           href: "/api/reports/overdue",
@@ -69,11 +73,14 @@ export default async function AdminPage() {
       </div>
       <div id="loans" className="col-span-12 scroll-mt-6">
         <AdminLoans
-          initialLoans={activeLoans.map((loan) => ({
+          initialLoans={loans.map((loan) => ({
             id: loan.id,
             code: loan.id.slice(0, 8).toUpperCase(),
+            status: loan.status,
             loan_date: loan.loan_date.toISOString(),
             due_date: loan.due_date.toISOString(),
+            return_date: loan.return_date?.toISOString() ?? null,
+            fine_amount: Number(loan.fine_amount),
             user: {
               name: loan.user.name,
               email: loan.user.email,

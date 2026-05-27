@@ -6,8 +6,11 @@ import { useRouter } from "next/navigation";
 type AdminLoan = {
   id: string;
   code: string;
+  status: "ACTIVE" | "RETURNED";
   loan_date: string;
   due_date: string;
+  return_date: string | null;
+  fine_amount: number;
   user: {
     name: string;
     email: string;
@@ -63,11 +66,27 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
     );
   }, [loans, memberFilter]);
 
-  const overdueLoans = useMemo(() => {
-    const today = new Date();
+  const activeLoans = useMemo(() => {
+    return [...filteredLoans]
+      .filter((loan) => loan.status === "ACTIVE")
+      .sort(
+        (first, second) =>
+          new Date(first.due_date).getTime() -
+          new Date(second.due_date).getTime(),
+      );
+  }, [filteredLoans]);
 
-    return loans.filter((loan) => new Date(loan.due_date) < today);
-  }, [loans]);
+  const returnedLoans = useMemo(() => {
+    return filteredLoans.filter((loan) => loan.status === "RETURNED");
+  }, [filteredLoans]);
+
+  const overdueLoans = useMemo(() => {
+    const today = startOfLocalDay(new Date());
+
+    return activeLoans.filter(
+      (loan) => startOfLocalDay(loan.due_date) < today,
+    );
+  }, [activeLoans]);
 
   function setLoanDate(
     loanId: string,
@@ -102,7 +121,20 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
         return;
       }
 
-      setLoans((current) => current.filter((loan) => loan.id !== loanId));
+      setLoans((current) =>
+        current.map((loan) =>
+          loan.id === data.loan.id
+            ? {
+                ...loan,
+                status: data.loan.status,
+                loan_date: data.loan.loan_date,
+                due_date: data.loan.due_date,
+                return_date: data.loan.return_date,
+                fine_amount: Number(data.loan.fine_amount),
+              }
+            : loan,
+        ),
+      );
       setMessage(
         `Returned ${data.loan.code}. Fine: ${Number(data.loan.fine_amount).toLocaleString()} THB.`,
       );
@@ -188,6 +220,13 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
         </div>
       ) : null}
 
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <LoanCountCard label="All loans" value={filteredLoans.length} />
+        <LoanCountCard label="Active" value={activeLoans.length} />
+        <LoanCountCard label="Returned" value={returnedLoans.length} />
+        <LoanCountCard label="Overdue" value={overdueLoans.length} />
+      </div>
+
       <div className="mt-4 border border-amber-200 bg-amber-50 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -240,7 +279,7 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
         )}
       </div>
 
-      {filteredLoans.length ? (
+      {activeLoans.length ? (
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[1240px] text-left text-sm">
             <thead className="border-b border-slate-200 text-slate-500">
@@ -256,7 +295,7 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
               </tr>
             </thead>
             <tbody>
-              {filteredLoans.map((loan) => (
+              {activeLoans.map((loan) => (
                 <tr key={loan.id} className="border-b border-slate-100">
                   <td className="py-3 pr-4 font-semibold text-slate-950">
                     {loan.code}
@@ -333,7 +372,105 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
           No active loans match this filter.
         </p>
       )}
+
+      <section id="all-loans" className="mt-5 scroll-mt-6 border border-slate-200 bg-slate-50 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="font-semibold text-slate-950">All Loan Records</h3>
+            <p className="mt-1 text-sm text-slate-600">
+              Complete borrowing history for active and returned loans. The
+              member filter above applies here too.
+            </p>
+          </div>
+          <span className="text-sm font-semibold text-slate-700">
+            {filteredLoans.length} records
+          </span>
+        </div>
+
+        {filteredLoans.length ? (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[1080px] text-left text-sm">
+              <thead className="border-b border-slate-200 text-slate-500">
+                <tr>
+                  <th className="py-2 pr-4 font-semibold">Loan Ref</th>
+                  <th className="py-2 pr-4 font-semibold">Status</th>
+                  <th className="py-2 pr-4 font-semibold">Member</th>
+                  <th className="py-2 pr-4 font-semibold">Book</th>
+                  <th className="py-2 pr-4 font-semibold">Loan Date</th>
+                  <th className="py-2 pr-4 font-semibold">Due Date</th>
+                  <th className="py-2 pr-4 font-semibold">Return Date</th>
+                  <th className="py-2 pr-4 font-semibold">Fine</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLoans.map((loan) => (
+                  <tr key={loan.id} className="border-b border-slate-200">
+                    <td className="py-3 pr-4 font-semibold text-slate-950">
+                      {loan.code}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <LoanStatusBadge status={loan.status} />
+                    </td>
+                    <td className="py-3 pr-4 text-slate-600">
+                      <div className="font-medium text-slate-950">
+                        {loan.user.name}
+                      </div>
+                      <div>{loan.user.email}</div>
+                    </td>
+                    <td className="py-3 pr-4 text-slate-600">{loan.book.title}</td>
+                    <td className="py-3 pr-4 text-slate-600">
+                      {new Date(loan.loan_date).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 pr-4 text-slate-600">
+                      {new Date(loan.due_date).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 pr-4 text-slate-600">
+                      {loan.return_date
+                        ? new Date(loan.return_date).toLocaleDateString()
+                        : "-"}
+                    </td>
+                    <td className="py-3 pr-4 font-semibold text-amber-800">
+                      {Number(loan.fine_amount).toLocaleString()} THB
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="mt-3 border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-600">
+            No loan records match this filter.
+          </p>
+        )}
+      </section>
     </section>
+  );
+}
+
+function LoanCountCard({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="border border-slate-200 bg-slate-50 p-3">
+      <div className="text-xs font-semibold uppercase text-slate-500">
+        {label}
+      </div>
+      <div className="mt-1 text-2xl font-semibold text-slate-950">{value}</div>
+    </div>
+  );
+}
+
+function LoanStatusBadge({ status }: { status: AdminLoan["status"] }) {
+  const isReturned = status === "RETURNED";
+
+  return (
+    <span
+      className={`inline-flex px-2 py-1 text-xs font-semibold ${
+        isReturned
+          ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+          : "border border-amber-200 bg-amber-50 text-amber-800"
+      }`}
+    >
+      {isReturned ? "Returned" : "Active"}
+    </span>
   );
 }
 
