@@ -46,3 +46,7 @@ export function calculateOverdueFine(
 ): number {
   return countWeekdaysBetweenDueAndReturn(dueDate, returnDate) * ratePerWeekday;
 }
+
+export function isDateOverdue(dueDateInput: Date, referenceDateInput: Date) {
+  return isAfter(startOfDay(referenceDateInput), startOfDay(dueDateInput));
+}

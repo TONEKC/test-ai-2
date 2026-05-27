@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { LoanStatus, UserRole } from "@prisma/client";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
-import { calculateDueDate } from "@/lib/date-math";
+import { calculateDueDate, isDateOverdue } from "@/lib/date-math";
 import { prisma } from "@/lib/prisma";
 
 const borrowSchema = z.object({
@@ -44,7 +44,11 @@ export async function POST(request: Request) {
         throw new Error("BORROW_LIMIT");
       }
 
-      if (activeLoans.some((activeLoan) => activeLoan.due_date < now)) {
+      if (
+        activeLoans.some((activeLoan) =>
+          isDateOverdue(activeLoan.due_date, now),
+        )
+      ) {
         throw new Error("HAS_OVERDUE");
       }
 

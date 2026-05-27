@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { BookCategory } from "@prisma/client";
-import { calculateDueDate, calculateOverdueFine } from "../src/lib/date-math";
+import {
+  calculateDueDate,
+  calculateOverdueFine,
+  isDateOverdue,
+} from "../src/lib/date-math";
 
 function date(value: string) {
   return new Date(`${value}T00:00:00`);
@@ -48,6 +52,18 @@ assert.equal(
   calculateOverdueFine(date("2026-05-22"), date("2026-05-24")),
   0,
   "weekend-only overdue range must not accrue a fine",
+);
+
+assert.equal(
+  isDateOverdue(date("2026-05-27"), date("2026-05-27")),
+  false,
+  "a loan due today must not be considered overdue on the same date",
+);
+
+assert.equal(
+  isDateOverdue(date("2026-05-27"), date("2026-05-28")),
+  true,
+  "a loan must be overdue after its due date",
 );
 
 console.log("Core date math tests passed.");

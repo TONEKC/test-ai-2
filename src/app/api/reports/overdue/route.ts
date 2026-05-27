@@ -3,7 +3,7 @@ import { LoanStatus, UserRole } from "@prisma/client";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { getCurrentUser } from "@/lib/auth";
-import { calculateOverdueFine } from "@/lib/date-math";
+import { calculateOverdueFine, isDateOverdue } from "@/lib/date-math";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -14,14 +14,16 @@ export async function GET() {
   }
 
   const now = new Date();
-  const overdueLoans = await prisma.loan.findMany({
+  const activeLoans = await prisma.loan.findMany({
     where: {
       status: LoanStatus.ACTIVE,
-      due_date: { lt: now },
     },
     include: { user: true, book: true },
     orderBy: [{ due_date: "asc" }],
   });
+  const overdueLoans = activeLoans.filter((loan) =>
+    isDateOverdue(loan.due_date, now),
+  );
 
   const finesByMember = overdueLoans.reduce<Record<string, number>>(
     (totals, loan) => {
