@@ -11,10 +11,10 @@ import { prisma } from "@/lib/prisma";
 const fontPath = join(
   process.cwd(),
   "node_modules",
-  "@fontsource",
+  "@expo-google-fonts",
   "sarabun",
-  "files",
-  "sarabun-thai-400-normal.woff",
+  "400Regular",
+  "Sarabun_400Regular.ttf",
 );
 
 const pageSize: [number, number] = [842, 595];
