@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/toast";
 
 type AdminBook = {
   id: string;
@@ -24,10 +25,9 @@ const categories = [
 
 export function AdminBooks({ initialBooks }: AdminBooksProps) {
   const router = useRouter();
+  const { notify } = useToast();
   const [books, setBooks] = useState(initialBooks);
   const [editingBook, setEditingBook] = useState<AdminBook | null>(null);
-  const [message, setMessage] = useState("");
-  const [modalMessage, setModalMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [deletingBookId, setDeletingBookId] = useState<string | null>(null);
@@ -40,7 +40,6 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setEditingBook(null);
-        setModalMessage("");
       }
     }
 
@@ -60,7 +59,6 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
   async function submitBook(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSaving(true);
-    setMessage("");
 
     const form = new FormData(event.currentTarget);
     const payload = {
@@ -80,17 +78,29 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        setMessage(data.error ?? "Unable to save book.");
+        notify({
+          title: "Unable to save book",
+          description: data.error ?? "Please check the book details.",
+          variant: "error",
+        });
         return;
       }
 
       setBooks((current) => [data.book, ...current]);
 
       event.currentTarget.reset();
-      setMessage("Book saved.");
+      notify({
+        title: "Book saved",
+        description: data.book.title,
+        variant: "success",
+      });
       router.refresh();
     } catch {
-      setMessage("Network error. Please try again.");
+      notify({
+        title: "Network error",
+        description: "Please try again.",
+        variant: "error",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -104,7 +114,6 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
     }
 
     setIsUpdating(true);
-    setModalMessage("");
 
     const form = new FormData(event.currentTarget);
     const payload = {
@@ -124,7 +133,11 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        setModalMessage(data.error ?? "Unable to update book.");
+        notify({
+          title: "Unable to update book",
+          description: data.error ?? "Please check the book details.",
+          variant: "error",
+        });
         return;
       }
 
@@ -132,11 +145,18 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
         current.map((book) => (book.id === data.book.id ? data.book : book)),
       );
       setEditingBook(null);
-      setModalMessage("");
-      setMessage("Book updated.");
+      notify({
+        title: "Book updated",
+        description: data.book.title,
+        variant: "success",
+      });
       router.refresh();
     } catch {
-      setModalMessage("Network error. Please try again.");
+      notify({
+        title: "Network error",
+        description: "Please try again.",
+        variant: "error",
+      });
     } finally {
       setIsUpdating(false);
     }
@@ -152,7 +172,6 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
     }
 
     setDeletingBookId(book.id);
-    setMessage("");
 
     try {
       const response = await fetch(`/api/books/${book.id}`, {
@@ -161,17 +180,29 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        setMessage(data.error ?? "Unable to delete book.");
+        notify({
+          title: "Unable to delete book",
+          description: data.error ?? "Books with loan history cannot be deleted.",
+          variant: "error",
+        });
         return;
       }
 
       setBooks((current) =>
         current.filter((currentBook) => currentBook.id !== book.id),
       );
-      setMessage("Book deleted.");
+      notify({
+        title: "Book deleted",
+        description: book.title,
+        variant: "success",
+      });
       router.refresh();
     } catch {
-      setMessage("Network error. Please try again.");
+      notify({
+        title: "Network error",
+        description: "Please try again.",
+        variant: "error",
+      });
     } finally {
       setDeletingBookId(null);
     }
@@ -179,12 +210,11 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
 
   function openEditModal(book: AdminBook) {
     setEditingBook(book);
-    setModalMessage("");
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[360px_1fr]">
-      <section className="border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="grid items-start gap-5 xl:grid-cols-[360px_1fr]">
+      <section className="self-start border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-950">Add Book</h2>
         <form onSubmit={submitBook} className="mt-4 space-y-3">
           <input
@@ -219,12 +249,6 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
             aria-label="Copies"
             className="h-10 w-full border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
           />
-
-          {message ? (
-            <div className="border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-              {message}
-            </div>
-          ) : null}
 
           <div className="flex gap-2">
             <button
@@ -312,7 +336,6 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
                 type="button"
                 onClick={() => {
                   setEditingBook(null);
-                  setModalMessage("");
                 }}
                 className="border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
               >
@@ -370,18 +393,11 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
                 />
               </div>
 
-              {modalMessage ? (
-                <div className="border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                  {modalMessage}
-                </div>
-              ) : null}
-
               <div className="flex flex-wrap justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => {
                     setEditingBook(null);
-                    setModalMessage("");
                   }}
                   className="h-10 border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                 >

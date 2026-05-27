@@ -1,7 +1,9 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/toast";
 
 type AdminLoan = {
   id: string;
@@ -30,9 +32,9 @@ function inputDate(value: string) {
 
 export function AdminLoans({ initialLoans }: AdminLoansProps) {
   const router = useRouter();
+  const { notify } = useToast();
   const [loans, setLoans] = useState(initialLoans);
   const [memberFilter, setMemberFilter] = useState("");
-  const [message, setMessage] = useState("");
   const [returnDates, setReturnDates] = useState<
     Record<string, { loan_date: string; due_date: string; return_date: string }>
   >(() =>
@@ -88,6 +90,15 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
     );
   }, [activeLoans]);
 
+  const overdueFineTotal = useMemo(() => {
+    const today = new Date();
+
+    return overdueLoans.reduce(
+      (total, loan) => total + calculateClientFine(loan.due_date, today),
+      0,
+    );
+  }, [overdueLoans]);
+
   function setLoanDate(
     loanId: string,
     key: "loan_date" | "due_date" | "return_date",
@@ -104,7 +115,6 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
   }
 
   async function markReturned(loanId: string) {
-    setMessage("");
     setReturningLoanId(loanId);
 
     try {
@@ -117,7 +127,11 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        setMessage(data.error ?? "Unable to return loan.");
+        notify({
+          title: "Unable to return loan",
+          description: data.error ?? "Please check the return dates.",
+          variant: "error",
+        });
         return;
       }
 
@@ -135,19 +149,24 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
             : loan,
         ),
       );
-      setMessage(
-        `Returned ${data.loan.code}. Fine: ${Number(data.loan.fine_amount).toLocaleString()} THB.`,
-      );
+      notify({
+        title: "Loan returned",
+        description: `${data.loan.code} fine: ${Number(data.loan.fine_amount).toLocaleString()} THB`,
+        variant: "success",
+      });
       router.refresh();
     } catch {
-      setMessage("Network error. Please try again.");
+      notify({
+        title: "Network error",
+        description: "Please try again.",
+        variant: "error",
+      });
     } finally {
       setReturningLoanId(null);
     }
   }
 
   async function saveTestDates(loanId: string) {
-    setMessage("");
     setSavingDatesLoanId(loanId);
 
     try {
@@ -163,7 +182,11 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        setMessage(data.error ?? "Unable to update loan dates.");
+        notify({
+          title: "Unable to update loan dates",
+          description: data.error ?? "Please check the selected dates.",
+          variant: "error",
+        });
         return;
       }
 
@@ -178,10 +201,18 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
             : loan,
         ),
       );
-      setMessage(`Saved test dates for ${data.loan.code}.`);
+      notify({
+        title: "Loan dates saved",
+        description: data.loan.code,
+        variant: "success",
+      });
       router.refresh();
     } catch {
-      setMessage("Network error. Please try again.");
+      notify({
+        title: "Network error",
+        description: "Please try again.",
+        variant: "error",
+      });
     } finally {
       setSavingDatesLoanId(null);
     }
@@ -214,17 +245,15 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
         className="mt-4 h-10 w-full border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
       />
 
-      {message ? (
-        <div className="mt-4 border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          {message}
-        </div>
-      ) : null}
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <LoanCountCard label="All loans" value={filteredLoans.length} />
         <LoanCountCard label="Active" value={activeLoans.length} />
         <LoanCountCard label="Returned" value={returnedLoans.length} />
         <LoanCountCard label="Overdue" value={overdueLoans.length} />
+        <LoanCountCard
+          label="Overdue fines"
+          value={`${overdueFineTotal.toLocaleString()} THB`}
+        />
       </div>
 
       <div className="mt-4 border border-amber-200 bg-amber-50 p-4">
@@ -236,7 +265,8 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
             </p>
           </div>
           <span className="text-sm font-semibold text-amber-800">
-            {overdueLoans.length} overdue
+            {overdueLoans.length} overdue / {overdueFineTotal.toLocaleString()}{" "}
+            THB
           </span>
         </div>
         {overdueLoans.length ? (
@@ -266,7 +296,10 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
                       {new Date(loan.due_date).toLocaleDateString()}
                     </td>
                     <td className="py-3 pr-4 font-semibold text-amber-800">
-                      {calculateClientFine(loan.due_date, new Date()).toLocaleString()}{" "}
+                      {calculateClientFine(
+                        loan.due_date,
+                        new Date(),
+                      ).toLocaleString()}{" "}
                       THB
                     </td>
                   </tr>
@@ -280,92 +313,84 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
       </div>
 
       {activeLoans.length ? (
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[1240px] text-left text-sm">
-            <thead className="border-b border-slate-200 text-slate-500">
-              <tr>
-                <th className="py-2 pr-4 font-semibold">Loan Ref</th>
-                <th className="py-2 pr-4 font-semibold">Member</th>
-                <th className="py-2 pr-4 font-semibold">Book</th>
-                <th className="py-2 pr-4 font-semibold">Current Due Date</th>
-                <th className="py-2 pr-4 font-semibold">Override Loan Date</th>
-                <th className="py-2 pr-4 font-semibold">Override Due Date</th>
-                <th className="py-2 pr-4 font-semibold">Override Return Date</th>
-                <th className="py-2 pr-4 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activeLoans.map((loan) => (
-                <tr key={loan.id} className="border-b border-slate-100">
-                  <td className="py-3 pr-4 font-semibold text-slate-950">
-                    {loan.code}
-                  </td>
-                  <td className="py-3 pr-4 text-slate-600">
-                    <div className="font-medium text-slate-950">
-                      {loan.user.name}
-                    </div>
-                    <div>{loan.user.email}</div>
-                  </td>
-                  <td className="py-3 pr-4 text-slate-600">{loan.book.title}</td>
-                  <td className="py-3 pr-4 text-slate-600">
-                    {new Date(loan.due_date).toLocaleDateString()}
-                  </td>
-                  <td className="py-3 pr-4">
-                    <input
-                      type="date"
-                      value={returnDates[loan.id]?.loan_date ?? ""}
-                      onChange={(event) =>
-                        setLoanDate(loan.id, "loan_date", event.target.value)
-                      }
-                      className="h-9 border border-slate-300 px-2 text-sm"
-                    />
-                  </td>
-                  <td className="py-3 pr-4">
-                    <input
-                      type="date"
-                      value={returnDates[loan.id]?.due_date ?? ""}
-                      onChange={(event) =>
-                        setLoanDate(loan.id, "due_date", event.target.value)
-                      }
-                      className="h-9 border border-slate-300 px-2 text-sm"
-                    />
-                  </td>
-                  <td className="py-3 pr-4">
-                    <input
-                      type="date"
-                      value={returnDates[loan.id]?.return_date ?? ""}
-                      onChange={(event) =>
-                        setLoanDate(loan.id, "return_date", event.target.value)
-                      }
-                      className="h-9 border border-slate-300 px-2 text-sm"
-                    />
-                  </td>
-                  <td className="py-3 pr-4">
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => saveTestDates(loan.id)}
-                        disabled={savingDatesLoanId === loan.id}
-                        className="border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:text-slate-400"
-                      >
-                        {savingDatesLoanId === loan.id
-                          ? "Saving..."
-                          : "Save Test Dates"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => markReturned(loan.id)}
-                        disabled={returningLoanId === loan.id}
-                        className="bg-emerald-700 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:bg-slate-400"
-                      >
-                        {returningLoanId === loan.id ? "Returning..." : "Return"}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="mt-4 grid gap-3">
+          {activeLoans.map((loan) => (
+            <article
+              key={loan.id}
+              className="grid gap-4 border border-slate-200 bg-slate-50 p-4 xl:grid-cols-[1.2fr_1.4fr_auto]"
+            >
+              <div className="min-w-0">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Loan Ref
+                </div>
+                <div className="mt-1 font-semibold text-slate-950">
+                  {loan.code}
+                </div>
+                <div className="mt-3 text-sm text-slate-600">
+                  <div className="font-medium text-slate-950">
+                    {loan.user.name}
+                  </div>
+                  <div className="break-words">{loan.user.email}</div>
+                </div>
+              </div>
+
+              <div className="grid min-w-0 gap-3 md:grid-cols-2">
+                <div>
+                  <div className="text-xs font-semibold uppercase text-slate-500">
+                    Book
+                  </div>
+                  <div className="mt-1 text-sm font-medium text-slate-950">
+                    {loan.book.title}
+                  </div>
+                  <div className="mt-1 text-sm text-slate-600">
+                    Current due: {new Date(loan.due_date).toLocaleDateString()}
+                  </div>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-1 2xl:grid-cols-3">
+                  <LoanDateInput
+                    label="Loan Date"
+                    value={returnDates[loan.id]?.loan_date ?? ""}
+                    onChange={(value) =>
+                      setLoanDate(loan.id, "loan_date", value)
+                    }
+                  />
+                  <LoanDateInput
+                    label="Due Date"
+                    value={returnDates[loan.id]?.due_date ?? ""}
+                    onChange={(value) =>
+                      setLoanDate(loan.id, "due_date", value)
+                    }
+                  />
+                  <LoanDateInput
+                    label="Return Date"
+                    value={returnDates[loan.id]?.return_date ?? ""}
+                    onChange={(value) =>
+                      setLoanDate(loan.id, "return_date", value)
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-end gap-2 xl:flex-col xl:items-stretch xl:justify-end">
+                <button
+                  type="button"
+                  onClick={() => saveTestDates(loan.id)}
+                  disabled={savingDatesLoanId === loan.id}
+                  className="h-10 border border-slate-300 px-3 text-sm font-semibold text-slate-700 hover:bg-white disabled:text-slate-400"
+                >
+                  {savingDatesLoanId === loan.id ? "Saving..." : "Save Dates"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => markReturned(loan.id)}
+                  disabled={returningLoanId === loan.id}
+                  className="h-10 bg-emerald-700 px-3 text-sm font-semibold text-white hover:bg-emerald-800 disabled:bg-slate-400"
+                >
+                  {returningLoanId === loan.id ? "Returning..." : "Return"}
+                </button>
+              </div>
+            </article>
+          ))}
         </div>
       ) : (
         <p className="mt-4 border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600">
@@ -373,7 +398,10 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
         </p>
       )}
 
-      <section id="all-loans" className="mt-5 scroll-mt-6 border border-slate-200 bg-slate-50 p-4">
+      <section
+        id="all-loans"
+        className="mt-5 scroll-mt-6 border border-slate-200 bg-slate-50 p-4"
+      >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="font-semibold text-slate-950">All Loan Records</h3>
@@ -417,7 +445,9 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
                       </div>
                       <div>{loan.user.email}</div>
                     </td>
-                    <td className="py-3 pr-4 text-slate-600">{loan.book.title}</td>
+                    <td className="py-3 pr-4 text-slate-600">
+                      {loan.book.title}
+                    </td>
                     <td className="py-3 pr-4 text-slate-600">
                       {new Date(loan.loan_date).toLocaleDateString()}
                     </td>
@@ -447,7 +477,37 @@ export function AdminLoans({ initialLoans }: AdminLoansProps) {
   );
 }
 
-function LoanCountCard({ label, value }: { label: string; value: number }) {
+function LoanDateInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block min-w-0">
+      <span className="text-xs font-semibold uppercase text-slate-500">
+        {label}
+      </span>
+      <input
+        type="date"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-1 h-10 w-full min-w-0 border border-slate-300 px-2 text-sm"
+      />
+    </label>
+  );
+}
+
+function LoanCountCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: ReactNode;
+}) {
   return (
     <div className="border border-slate-200 bg-slate-50 p-3">
       <div className="text-xs font-semibold uppercase text-slate-500">

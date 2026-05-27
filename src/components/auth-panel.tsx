@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/toast";
 
 type AuthPanelProps = {
   mode: "member" | "admin";
@@ -11,9 +12,9 @@ type AuthMode = "login" | "register";
 
 export function AuthPanel({ mode }: AuthPanelProps) {
   const router = useRouter();
+  const { notify } = useToast();
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState("");
 
   const isAdmin = mode === "admin";
   const title = isAdmin ? "Librarian Login" : "Member Access";
@@ -24,7 +25,6 @@ export function AuthPanel({ mode }: AuthPanelProps) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsLoading(true);
-    setMessage("");
 
     const form = new FormData(event.currentTarget);
     const endpoint =
@@ -61,13 +61,26 @@ export function AuthPanel({ mode }: AuthPanelProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        setMessage(data.error ?? "Authentication failed.");
+        notify({
+          title: "Authentication failed",
+          description: data.error ?? "Please check your credentials.",
+          variant: "error",
+        });
         return;
       }
 
+      notify({
+        title: authMode === "register" && !isAdmin ? "Account created" : "Logged in",
+        description: isAdmin ? "Librarian dashboard" : "Member dashboard",
+        variant: "success",
+      });
       router.refresh();
     } catch {
-      setMessage("Network error. Please try again.");
+      notify({
+        title: "Network error",
+        description: "Please try again.",
+        variant: "error",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +123,6 @@ export function AuthPanel({ mode }: AuthPanelProps) {
               type="button"
               onClick={() => {
                 setAuthMode("login");
-                setMessage("");
               }}
               className={`px-4 py-2 text-sm font-semibold transition ${
                 authMode === "login"
@@ -124,7 +136,6 @@ export function AuthPanel({ mode }: AuthPanelProps) {
               type="button"
               onClick={() => {
                 setAuthMode("register");
-                setMessage("");
               }}
               className={`px-4 py-2 text-sm font-semibold transition ${
                 authMode === "register"
@@ -208,12 +219,6 @@ export function AuthPanel({ mode }: AuthPanelProps) {
               placeholder="Password"
             />
           </label>
-
-          {message ? (
-            <div className="border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {message}
-            </div>
-          ) : null}
 
           <button
             type="submit"

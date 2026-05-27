@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useToast } from "@/components/toast";
 
 type CatalogBook = {
   id: string;
@@ -33,7 +34,7 @@ function categoryLabel(category: CatalogBook["category"]) {
 
 export function CatalogClient({ books, isMember }: CatalogClientProps) {
   const router = useRouter();
-  const [message, setMessage] = useState("");
+  const { notify } = useToast();
   const [borrowResult, setBorrowResult] = useState<BorrowResult | null>(null);
   const [borrowingBookId, setBorrowingBookId] = useState<string | null>(null);
 
@@ -43,7 +44,6 @@ export function CatalogClient({ books, isMember }: CatalogClientProps) {
       return;
     }
 
-    setMessage("");
     setBorrowResult(null);
     setBorrowingBookId(bookId);
 
@@ -56,14 +56,27 @@ export function CatalogClient({ books, isMember }: CatalogClientProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        setMessage(data.error ?? "Unable to borrow this book.");
+        notify({
+          title: "Unable to borrow book",
+          description: data.error ?? "Please try again.",
+          variant: "error",
+        });
         return;
       }
 
       setBorrowResult(data.loan);
+      notify({
+        title: "Borrowed successfully",
+        description: `${data.loan.book.title} due ${new Date(data.loan.due_date).toLocaleDateString()}`,
+        variant: "success",
+      });
       router.refresh();
     } catch {
-      setMessage("Network error. Please try again.");
+      notify({
+        title: "Network error",
+        description: "Please try again.",
+        variant: "error",
+      });
     } finally {
       setBorrowingBookId(null);
     }
@@ -71,12 +84,6 @@ export function CatalogClient({ books, isMember }: CatalogClientProps) {
 
   return (
     <div className="space-y-5">
-      {message ? (
-        <div className="border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {message}
-        </div>
-      ) : null}
-
       {borrowResult ? (
         <div className="border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
           <div className="font-semibold">Borrowed successfully</div>
