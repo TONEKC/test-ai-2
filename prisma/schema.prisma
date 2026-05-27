@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  MEMBER
+  LIBRARIAN
+}
+
+enum BookCategory {
+  TEXTBOOK
+  GENERAL
+  NOVEL
+}
+
+enum LoanStatus {
+  ACTIVE
+  RETURNED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  phone     String
+  password  String
+  role      UserRole @default(MEMBER)
+  loans     Loan[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Book {
+  id               String       @id @default(uuid())
+  title            String
+  author           String
+  category         BookCategory
+  total_copies     Int
+  available_copies Int
+  loans            Loan[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@unique([title, author])
+  @@index([category])
+}
+
+model Loan {
+  id          String     @id @default(uuid())
+  userId      String
+  bookId      String
+  loan_date   DateTime   @default(now())
+  due_date    DateTime
+  return_date DateTime?
+  status      LoanStatus @default(ACTIVE)
+  fine_amount Decimal    @default(0) @db.Decimal(10, 2)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book        Book       @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([userId, status])
+  @@index([bookId, status])
+  @@index([due_date, status])
+}
