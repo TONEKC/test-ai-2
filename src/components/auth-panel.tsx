@@ -18,8 +18,8 @@ export function AuthPanel({ mode }: AuthPanelProps) {
   const isAdmin = mode === "admin";
   const title = isAdmin ? "Librarian Login" : "Member Access";
   const description = isAdmin
-    ? "Enter the restricted stacks with the librarian credentials configured in Vercel."
-    : "Register a member account or log in to view your loans and borrow from the catalog.";
+    ? "Enter the restricted stacks with the librarian username and password configured in Vercel."
+    : "Register a member account or log in with a loan code to view loans and borrow from the catalog.";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -41,7 +41,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
             password: String(form.get("password") ?? ""),
           }
         : {
-            email: String(form.get("email") ?? ""),
+            identifier: String(form.get("identifier") ?? ""),
             password: String(form.get("password") ?? ""),
             role: isAdmin ? "LIBRARIAN" : "MEMBER",
           };
@@ -165,16 +165,31 @@ export function AuthPanel({ mode }: AuthPanelProps) {
             </>
           ) : null}
 
-          <label className="block">
-            <span className="text-sm font-medium text-slate-800">Email</span>
-            <input
-              name="email"
-              type="email"
-              required
-              className="mt-1 h-11 w-full border border-slate-300 px-3 text-slate-950 outline-none transition focus:border-emerald-700"
-              placeholder={isAdmin ? "admin@library.local" : "you@email.com"}
-            />
-          </label>
+          {!isAdmin && authMode === "register" ? (
+            <label className="block">
+              <span className="text-sm font-medium text-slate-800">Email</span>
+              <input
+                name="email"
+                type="email"
+                required
+                className="mt-1 h-11 w-full border border-slate-300 px-3 text-slate-950 outline-none transition focus:border-emerald-700"
+                placeholder="you@email.com"
+              />
+            </label>
+          ) : (
+            <label className="block">
+              <span className="text-sm font-medium text-slate-800">
+                {isAdmin ? "Username" : "Loan code"}
+              </span>
+              <input
+                name="identifier"
+                type="text"
+                required
+                className="mt-1 h-11 w-full border border-slate-300 px-3 text-slate-950 outline-none transition focus:border-emerald-700"
+                placeholder={isAdmin ? "admin" : "A1B2C3D4"}
+              />
+            </label>
+          )}
 
           <label className="block">
             <span className="text-sm font-medium text-slate-800">Password</span>

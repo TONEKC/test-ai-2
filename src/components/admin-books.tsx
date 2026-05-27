@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type AdminBook = {
@@ -27,7 +27,31 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
   const [books, setBooks] = useState(initialBooks);
   const [editingBook, setEditingBook] = useState<AdminBook | null>(null);
   const [message, setMessage] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [deletingBookId, setDeletingBookId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!editingBook) {
+      return;
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setEditingBook(null);
+        setModalMessage("");
+      }
+    }
+
+    document.addEventListener("keydown", closeOnEscape);
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      document.body.style.overflow = "";
+    };
+  }, [editingBook]);
 
   function formValue(form: FormData, key: string) {
     return String(form.get(key) ?? "");
@@ -43,14 +67,13 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
       title: formValue(form, "title"),
       author: formValue(form, "author"),
       category: formValue(form, "category"),
-      total_copies: Number(formValue(form, "total_copies")),
-      available_copies: Number(formValue(form, "available_copies")),
+      total_copies: Number(formValue(form, "copies")),
+      available_copies: Number(formValue(form, "copies")),
     };
-    const endpoint = editingBook ? `/api/books/${editingBook.id}` : "/api/books";
 
     try {
-      const response = await fetch(endpoint, {
-        method: editingBook ? "PATCH" : "POST",
+      const response = await fetch("/api/books", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -61,15 +84,8 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
         return;
       }
 
-      if (editingBook) {
-        setBooks((current) =>
-          current.map((book) => (book.id === data.book.id ? data.book : book)),
-        );
-      } else {
-        setBooks((current) => [data.book, ...current]);
-      }
+      setBooks((current) => [data.book, ...current]);
 
-      setEditingBook(null);
       event.currentTarget.reset();
       setMessage("Book saved.");
       router.refresh();
@@ -80,33 +96,112 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
     }
   }
 
+  async function submitEdit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!editingBook) {
+      return;
+    }
+
+    setIsUpdating(true);
+    setModalMessage("");
+
+    const form = new FormData(event.currentTarget);
+    const payload = {
+      title: formValue(form, "title"),
+      author: formValue(form, "author"),
+      category: formValue(form, "category"),
+      total_copies: Number(formValue(form, "total_copies")),
+      available_copies: Number(formValue(form, "available_copies")),
+    };
+
+    try {
+      const response = await fetch(`/api/books/${editingBook.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setModalMessage(data.error ?? "Unable to update book.");
+        return;
+      }
+
+      setBooks((current) =>
+        current.map((book) => (book.id === data.book.id ? data.book : book)),
+      );
+      setEditingBook(null);
+      setModalMessage("");
+      setMessage("Book updated.");
+      router.refresh();
+    } catch {
+      setModalMessage("Network error. Please try again.");
+    } finally {
+      setIsUpdating(false);
+    }
+  }
+
+  async function deleteBook(book: AdminBook) {
+    const confirmed = window.confirm(
+      `Delete "${book.title}"? Books with loan history cannot be deleted.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingBookId(book.id);
+    setMessage("");
+
+    try {
+      const response = await fetch(`/api/books/${book.id}`, {
+        method: "DELETE",
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error ?? "Unable to delete book.");
+        return;
+      }
+
+      setBooks((current) =>
+        current.filter((currentBook) => currentBook.id !== book.id),
+      );
+      setMessage("Book deleted.");
+      router.refresh();
+    } catch {
+      setMessage("Network error. Please try again.");
+    } finally {
+      setDeletingBookId(null);
+    }
+  }
+
+  function openEditModal(book: AdminBook) {
+    setEditingBook(book);
+    setModalMessage("");
+  }
+
   return (
     <div className="grid gap-5 xl:grid-cols-[360px_1fr]">
       <section className="border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-950">
-          {editingBook ? "Edit Book" : "Add Book"}
-        </h2>
+        <h2 className="text-lg font-semibold text-slate-950">Add Book</h2>
         <form onSubmit={submitBook} className="mt-4 space-y-3">
           <input
-            key={editingBook?.id ?? "new-title"}
             name="title"
             required
-            defaultValue={editingBook?.title}
             placeholder="Title"
             className="h-10 w-full border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
           />
           <input
-            key={editingBook?.id ?? "new-author"}
             name="author"
             required
-            defaultValue={editingBook?.author}
             placeholder="Author"
             className="h-10 w-full border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
           />
           <select
-            key={editingBook?.id ?? "new-category"}
             name="category"
-            defaultValue={editingBook?.category ?? "GENERAL"}
+            defaultValue="GENERAL"
             className="h-10 w-full border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
           >
             {categories.map((category) => (
@@ -115,26 +210,15 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
               </option>
             ))}
           </select>
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              key={`${editingBook?.id ?? "new"}-total`}
-              name="total_copies"
-              type="number"
-              min={0}
-              required
-              defaultValue={editingBook?.total_copies ?? 1}
-              className="h-10 w-full border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
-            />
-            <input
-              key={`${editingBook?.id ?? "new"}-available`}
-              name="available_copies"
-              type="number"
-              min={0}
-              required
-              defaultValue={editingBook?.available_copies ?? 1}
-              className="h-10 w-full border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
-            />
-          </div>
+          <input
+            name="copies"
+            type="number"
+            min={0}
+            required
+            defaultValue={1}
+            aria-label="Copies"
+            className="h-10 w-full border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
+          />
 
           {message ? (
             <div className="border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
@@ -150,15 +234,6 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
             >
               {isSaving ? "Saving..." : "Save Book"}
             </button>
-            {editingBook ? (
-              <button
-                type="button"
-                onClick={() => setEditingBook(null)}
-                className="h-10 border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-              >
-                Cancel
-              </button>
-            ) : null}
           </div>
         </form>
       </section>
@@ -188,13 +263,23 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
                     {book.available_copies}/{book.total_copies}
                   </td>
                   <td className="py-3 pr-4">
-                    <button
-                      type="button"
-                      onClick={() => setEditingBook(book)}
-                      className="border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-                    >
-                      Edit
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(book)}
+                        className="border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteBook(book)}
+                        disabled={deletingBookId === book.id}
+                        className="border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                      >
+                        {deletingBookId === book.id ? "Deleting..." : "Delete"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -202,6 +287,118 @@ export function AdminBooks({ initialBooks }: AdminBooksProps) {
           </table>
         </div>
       </section>
+
+      {editingBook ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-book-title"
+        >
+          <div className="w-full max-w-lg border border-slate-200 bg-white p-5 shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold uppercase text-amber-700">
+                  Catalog Record
+                </p>
+                <h3
+                  id="edit-book-title"
+                  className="mt-1 text-xl font-semibold text-slate-950"
+                >
+                  Edit Book
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingBook(null);
+                  setModalMessage("");
+                }}
+                className="border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+              >
+                Close
+              </button>
+            </div>
+
+            <form onSubmit={submitEdit} className="mt-5 space-y-3">
+              <input
+                key={`${editingBook.id}-title`}
+                name="title"
+                required
+                defaultValue={editingBook.title}
+                placeholder="Title"
+                className="h-10 w-full border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
+              />
+              <input
+                key={`${editingBook.id}-author`}
+                name="author"
+                required
+                defaultValue={editingBook.author}
+                placeholder="Author"
+                className="h-10 w-full border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
+              />
+              <select
+                key={`${editingBook.id}-category`}
+                name="category"
+                defaultValue={editingBook.category}
+                className="h-10 w-full border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
+              >
+                {categories.map((category) => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
+                  </option>
+                ))}
+              </select>
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  key={`${editingBook.id}-total`}
+                  name="total_copies"
+                  type="number"
+                  min={0}
+                  required
+                  defaultValue={editingBook.total_copies}
+                  className="h-10 w-full border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
+                />
+                <input
+                  key={`${editingBook.id}-available`}
+                  name="available_copies"
+                  type="number"
+                  min={0}
+                  required
+                  defaultValue={editingBook.available_copies}
+                  className="h-10 w-full border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
+                />
+              </div>
+
+              {modalMessage ? (
+                <div className="border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {modalMessage}
+                </div>
+              ) : null}
+
+              <div className="flex flex-wrap justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingBook(null);
+                    setModalMessage("");
+                  }}
+                  className="h-10 border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdating}
+                  className="h-10 bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:bg-slate-400"
+                >
+                  {isUpdating ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

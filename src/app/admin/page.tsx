@@ -28,7 +28,6 @@ export default async function AdminPage() {
       where: { status: "ACTIVE" },
       include: { user: true, book: true },
       orderBy: { due_date: "asc" },
-      take: 20,
     }),
   ]);
 

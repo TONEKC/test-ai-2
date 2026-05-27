@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 export function getLibrarianCredentials() {
   const email = process.env.LIBRARIAN_EMAIL?.toLowerCase();
+  const username = (process.env.LIBRARIAN_USERNAME ?? "admin").toLowerCase();
   const password = process.env.LIBRARIAN_PASSWORD;
   const name = process.env.LIBRARIAN_NAME ?? "Library Admin";
 
@@ -11,7 +12,7 @@ export function getLibrarianCredentials() {
     throw new Error("LIBRARIAN_EMAIL and LIBRARIAN_PASSWORD must be set.");
   }
 
-  return { email, password, name };
+  return { email, username, password, name };
 }
 
 export async function ensureLibrarianUser() {

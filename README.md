@@ -6,20 +6,22 @@ Single-repo Next.js App Router project for a library lending system using Prisma
 
 Implemented:
 
-- Member register/login at `/member`
-- Librarian login at `/admin`
-- HTTP-only JWT session cookie auth
-- Prisma schema for `User`, `Book`, and `Loan`
-- Seed script for librarian user and 5 books
-- Subdomain routing support for `member.*` and `admin.*`
-
-Next phase:
-
-- Book CRUD
-- Borrowing rules and loan history
-- Return flow with `loan_date` and `return_date` overrides
-- Weekday-only fine calculation UI
-- PDF overdue report
+- Member registration and member login with loan code plus password. Email is
+  still accepted as a fallback for a newly registered member who has no loan
+  code yet.
+- Librarian login at `/admin` with `LIBRARIAN_USERNAME`/`LIBRARIAN_PASSWORD`
+  from environment variables.
+- Catalog browsing, borrowing, active loans, and loan history behind member
+  login.
+- Book management behind librarian login, including add, edit modal, and delete
+  for books without loan history.
+- Borrowing validations: max 3 active loans, no borrowing with an active
+  overdue loan, and no borrowing when available copies are 0.
+- Return flow with editable `loan_date`, `due_date`, and `return_date` for
+  senior testing.
+- Weekday-only fine calculation at 20 THB per overdue weekday.
+- Visible overdue table and PDF export for overdue active loans.
+- Subdomain routing support for `member.*` and `admin.*`.
 
 ## Environment Variables
 
@@ -28,6 +30,7 @@ Create these in Vercel Project Settings and in `.env.local` for local developmen
 ```bash
 DATABASE_URL="postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres?sslmode=require"
 JWT_SECRET="replace-with-a-random-secret-at-least-32-characters"
+LIBRARIAN_USERNAME="admin"
 LIBRARIAN_EMAIL="admin@library.local"
 LIBRARIAN_PASSWORD="change-this-password"
 LIBRARIAN_NAME="Library Admin"
@@ -88,3 +91,38 @@ In Vercel:
 4. Configure DNS records as Vercel instructs.
 
 Role checks still happen server-side. URL separation is only routing, not authorization.
+
+## Senior Testing Notes
+
+The required date override is available after librarian login:
+
+1. Open `/admin`.
+2. Go to `Active Loans`.
+3. Use `Override Loan Date`, `Override Due Date`, and `Override Return Date`.
+4. Click `Save Test Dates` to make an active loan overdue without returning it.
+5. Click `Return` to mark the loan returned and calculate the fine.
+
+For the Friday-to-Monday fine test, set `Override Due Date` to Friday and
+`Override Return Date` to the following Monday. The expected fine is 20 THB
+because only Monday is counted.
+
+Automated checks:
+
+```bash
+npm run test:core
+```
+
+This validates due-date and fine math without needing a database.
+
+With a working `.env.local` containing `DATABASE_URL`, `JWT_SECRET`, and
+librarian credentials, run:
+
+```bash
+npm run dev
+BASE_URL="http://[::1]:3000" npm run test:live
+```
+
+`test:live` registers members, creates test books, verifies novel/textbook due
+dates, loan-code login, wrong-password rejection, 3-loan limit, overdue blocking,
+same-day fine, Friday-to-Monday fine, weekday-only fine, out-of-stock rejection,
+and overdue PDF export.

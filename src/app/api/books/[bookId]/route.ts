@@ -43,10 +43,82 @@ export async function PATCH(
     );
   }
 
-  const book = await prisma.book.update({
-    where: { id: bookId },
-    data: parsed.data,
+  try {
+    const activeLoanCount = await prisma.loan.count({
+      where: { bookId, status: "ACTIVE" },
+    });
+    const checkedOutCopies =
+      parsed.data.total_copies - parsed.data.available_copies;
+
+    if (checkedOutCopies < activeLoanCount) {
+      return NextResponse.json(
+        {
+          error:
+            "Copies cannot be lower than the number of active loans for this book.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const book = await prisma.book.update({
+      where: { id: bookId },
+      data: parsed.data,
+    });
+
+    return NextResponse.json({ book });
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "P2025"
+    ) {
+      return NextResponse.json({ error: "Book not found." }, { status: 404 });
+    }
+
+    throw error;
+  }
+}
+
+export async function DELETE(
+  _request: Request,
+  context: { params: Promise<{ bookId: string }> },
+) {
+  const user = await getCurrentUser();
+
+  if (user?.role !== UserRole.LIBRARIAN) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { bookId } = await context.params;
+
+  const loanCount = await prisma.loan.count({
+    where: { bookId },
   });
 
-  return NextResponse.json({ book });
+  if (loanCount > 0) {
+    return NextResponse.json(
+      { error: "Books with loan history cannot be deleted." },
+      { status: 409 },
+    );
+  }
+
+  try {
+    await prisma.book.delete({
+      where: { id: bookId },
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "P2025"
+    ) {
+      return NextResponse.json({ error: "Book not found." }, { status: 404 });
+    }
+
+    throw error;
+  }
 }

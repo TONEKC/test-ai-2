@@ -8,6 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:core": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' tests/date-math.test.ts",
+    "test:live": "node tests/live-flow.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
