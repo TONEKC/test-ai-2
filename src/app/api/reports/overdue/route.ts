@@ -23,6 +23,15 @@ export async function GET() {
     orderBy: [{ due_date: "asc" }],
   });
 
+  const finesByMember = overdueLoans.reduce<Record<string, number>>(
+    (totals, loan) => {
+      totals[loan.userId] =
+        (totals[loan.userId] ?? 0) + calculateOverdueFine(loan.due_date, now);
+
+      return totals;
+    },
+    {},
+  );
   const rows = overdueLoans.map((loan) => {
     const fine = calculateOverdueFine(loan.due_date, now);
 
@@ -32,6 +41,7 @@ export async function GET() {
       loan.book.title,
       loan.due_date.toLocaleDateString(),
       `${fine.toLocaleString()} THB`,
+      `${finesByMember[loan.userId].toLocaleString()} THB`,
     ];
   });
   const totalFines = overdueLoans.reduce(
@@ -48,10 +58,19 @@ export async function GET() {
 
   autoTable(doc, {
     startY: 40,
-    head: [["Member", "Email", "Overdue Book", "Due Date", "Fine"]],
+    head: [
+      [
+        "Member",
+        "Email",
+        "Overdue Book",
+        "Due Date",
+        "Book Fine",
+        "Member Total",
+      ],
+    ],
     body: rows.length
       ? rows
-      : [["No overdue loans", "-", "-", "-", "0 THB"]],
+      : [["No overdue loans", "-", "-", "-", "0 THB", "0 THB"]],
     styles: { fontSize: 9 },
     headStyles: { fillColor: [23, 74, 58] },
   });
