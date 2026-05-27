@@ -26,7 +26,7 @@ Next phase:
 Create these in Vercel Project Settings and in `.env.local` for local development:
 
 ```bash
-DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres?sslmode=require"
+DATABASE_URL="postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres?sslmode=require"
 JWT_SECRET="replace-with-a-random-secret-at-least-32-characters"
 LIBRARIAN_EMAIL="admin@library.local"
 LIBRARIAN_PASSWORD="change-this-password"
@@ -57,8 +57,8 @@ Open:
 ## Supabase Setup
 
 1. Create a Supabase project.
-2. Copy the PostgreSQL connection string.
-3. Replace `[PASSWORD]` with the database password.
+2. Copy the session pooler PostgreSQL connection string.
+3. Replace `[PASSWORD]` with the database password. URL-encode special characters, for example `!` becomes `%21`.
 4. Set `DATABASE_URL` in Vercel and local `.env.local`.
 5. Run `npm run db:push` once to create tables.
 6. Run `npm run db:seed` once to create the librarian and sample books.
