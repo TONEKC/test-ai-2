@@ -35,7 +35,7 @@ export default async function AdminPage() {
     <AppShell
       user={user}
       roleLabel="Librarian"
-      title="Librarian Control Room"
+      title="Librarian Dashboard"
       description="Manage books, return active loans, and download overdue reports from one signed-in workspace."
       navItems={[
         {
@@ -55,7 +55,7 @@ export default async function AdminPage() {
         },
       ]}
     >
-      <div id="books" className="scroll-mt-6">
+      <div id="books" className="col-span-12 scroll-mt-6">
         <AdminBooks
           initialBooks={books.map((book) => ({
             id: book.id,
@@ -67,7 +67,7 @@ export default async function AdminPage() {
           }))}
         />
       </div>
-      <div id="loans" className="scroll-mt-6">
+      <div id="loans" className="col-span-12 scroll-mt-6">
         <AdminLoans
           initialLoans={activeLoans.map((loan) => ({
             id: loan.id,

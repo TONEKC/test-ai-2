@@ -28,10 +28,10 @@ export function AppShell({
 }: AppShellProps) {
   return (
     <main className="min-h-screen">
-      <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[280px_1fr] lg:py-8">
-        <aside className="border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-6 lg:self-start">
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-12 gap-5 px-4 py-6 sm:px-6 lg:gap-6 lg:py-8">
+        <aside className="col-span-12 border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-6 lg:col-span-3 lg:self-start">
           <Link href="/" className="text-lg font-semibold text-slate-950">
-            Arcane Grand Library
+            Library Lending System
           </Link>
 
           <div className="mt-6 border border-slate-200 bg-slate-50 p-4">
@@ -68,20 +68,32 @@ export function AppShell({
           </div>
         </aside>
 
-        <div className="min-w-0 space-y-6">
-          <header className="border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-semibold uppercase text-amber-700">
-              {roleLabel} Dashboard
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-950 sm:text-4xl">
-              {title}
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              {description}
-            </p>
+        <div className="col-span-12 grid min-w-0 grid-cols-12 gap-5 lg:col-span-9 lg:gap-6">
+          <header className="col-span-12 grid grid-cols-12 gap-4 border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="col-span-12 lg:col-span-9">
+              <p className="text-sm font-semibold uppercase text-amber-700">
+                {roleLabel} Dashboard
+              </p>
+              <h1 className="mt-2 text-3xl font-semibold text-slate-950 sm:text-4xl">
+                {title}
+              </h1>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                {description}
+              </p>
+            </div>
+            <div className="col-span-12 border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 lg:col-span-3">
+              <span className="block text-xs font-semibold uppercase text-amber-700">
+                Workspace
+              </span>
+              <span className="mt-2 block font-semibold text-slate-950">
+                Library Dashboard
+              </span>
+            </div>
           </header>
 
-          {children}
+          <div className="col-span-12 grid grid-cols-12 gap-5 lg:gap-6">
+            {children}
+          </div>
         </div>
       </div>
     </main>

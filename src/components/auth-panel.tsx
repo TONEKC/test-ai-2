@@ -18,7 +18,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
   const isAdmin = mode === "admin";
   const title = isAdmin ? "Librarian Login" : "Member Access";
   const description = isAdmin
-    ? "Enter the restricted stacks with the librarian username and password configured in Vercel."
+    ? "Log in with the librarian username and password."
     : "Register a member account or log in with a loan code to view loans and borrow from the catalog.";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -68,10 +68,10 @@ export function AuthPanel({ mode }: AuthPanelProps) {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10 sm:px-6 lg:grid lg:grid-cols-[1fr_420px] lg:items-start lg:py-16">
-      <div className="space-y-5">
+    <section className="mx-auto grid w-full max-w-6xl grid-cols-12 gap-5 px-4 py-10 sm:px-6 lg:gap-6 lg:py-16">
+      <div className="col-span-12 space-y-5 lg:col-span-7">
         <p className="text-sm font-semibold uppercase text-amber-700">
-          Arcane Grand Library
+          Library Lending System
         </p>
         <div className="space-y-3">
           <h1 className="text-4xl font-semibold text-slate-950 sm:text-5xl">
@@ -81,23 +81,23 @@ export function AuthPanel({ mode }: AuthPanelProps) {
             {description}
           </p>
         </div>
-        <div className="grid gap-3 text-sm text-slate-700 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 text-sm text-slate-700 sm:grid-cols-3">
           <div className="border border-amber-200 bg-white/90 p-4">
-            <div className="font-semibold text-slate-950">Secure Session</div>
-            <div className="mt-1 text-slate-600">HTTP-only JWT cookie</div>
+            <div className="font-semibold text-slate-950">Catalog</div>
+            <div className="mt-1 text-slate-600">Browse available books</div>
           </div>
           <div className="border border-amber-200 bg-white/90 p-4">
-            <div className="font-semibold text-slate-950">Prisma Ready</div>
-            <div className="mt-1 text-slate-600">Supabase PostgreSQL</div>
+            <div className="font-semibold text-slate-950">Borrowing</div>
+            <div className="mt-1 text-slate-600">Track active loans</div>
           </div>
           <div className="border border-amber-200 bg-white/90 p-4">
-            <div className="font-semibold text-slate-950">Vercel CI/CD</div>
-            <div className="mt-1 text-slate-600">Deploy by Git push</div>
+            <div className="font-semibold text-slate-950">Returns</div>
+            <div className="mt-1 text-slate-600">Review fines and history</div>
           </div>
         </div>
       </div>
 
-      <div className="border border-amber-200 bg-white/95 p-5 shadow-sm">
+      <div className="col-span-12 border border-amber-200 bg-white/95 p-5 shadow-sm lg:col-span-5">
         {!isAdmin ? (
           <div className="mb-5 grid grid-cols-2 border border-slate-200 p-1">
             <button
@@ -217,9 +217,9 @@ export function AuthPanel({ mode }: AuthPanelProps) {
             {isLoading
               ? "Please wait..."
               : isAdmin
-            ? "Enter Restricted Stacks"
+            ? "Login as Librarian"
                 : authMode === "register"
-                  ? "Create Member Seal"
+                  ? "Create Account"
                   : "Enter Library"}
           </button>
         </form>

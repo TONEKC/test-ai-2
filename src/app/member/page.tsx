@@ -36,7 +36,7 @@ export default async function MemberPage() {
     <AppShell
       user={user}
       roleLabel="Member"
-      title="Member Reading Desk"
+      title="Member Dashboard"
       description="Browse the catalog, borrow available books, and track active and returned loans from one signed-in workspace."
       navItems={[
         {
@@ -56,7 +56,7 @@ export default async function MemberPage() {
         },
       ]}
     >
-      <section id="catalog" className="scroll-mt-6 space-y-4">
+      <section id="catalog" className="col-span-12 scroll-mt-6 space-y-4">
         <div>
           <p className="text-sm font-semibold uppercase text-amber-700">
             Catalog
@@ -80,7 +80,7 @@ export default async function MemberPage() {
 
       <section
         id="active-loans"
-        className="scroll-mt-6 border border-slate-200 bg-white p-5 shadow-sm"
+        className="col-span-12 scroll-mt-6 border border-slate-200 bg-white p-5 shadow-sm"
       >
         <h2 className="text-lg font-semibold text-slate-950">Active Loans</h2>
         {activeLoans.length ? (
@@ -123,7 +123,7 @@ export default async function MemberPage() {
 
       <section
         id="history"
-        className="scroll-mt-6 border border-slate-200 bg-white p-5 shadow-sm"
+        className="col-span-12 scroll-mt-6 border border-slate-200 bg-white p-5 shadow-sm"
       >
         <h2 className="text-lg font-semibold text-slate-950">Past History</h2>
         {historyLoans.length ? (

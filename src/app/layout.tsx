@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Enchanted Library Lending System",
-  description: "Magical library lending system with Next.js, Prisma, and Supabase",
+  title: "Library Lending System",
+  description: "Library catalog, borrowing, returns, fines, and overdue reports",
 };
 
 export default function RootLayout({
