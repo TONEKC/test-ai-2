@@ -71,7 +71,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
     <section className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10 sm:px-6 lg:grid lg:grid-cols-[1fr_420px] lg:items-start lg:py-16">
       <div className="space-y-5">
         <p className="text-sm font-semibold uppercase text-amber-700">
-          Enchanted Library
+          Arcane Grand Library
         </p>
         <div className="space-y-3">
           <h1 className="text-4xl font-semibold text-slate-950 sm:text-5xl">
@@ -202,10 +202,10 @@ export function AuthPanel({ mode }: AuthPanelProps) {
             {isLoading
               ? "Please wait..."
               : isAdmin
-                ? "Login as Librarian"
+            ? "Enter Restricted Stacks"
                 : authMode === "register"
-                  ? "Create Account"
-                  : "Login"}
+                  ? "Create Member Seal"
+                  : "Enter Library"}
           </button>
         </form>
       </div>

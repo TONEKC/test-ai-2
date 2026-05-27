@@ -17,6 +17,15 @@ const bookSchema = z.object({
 });
 
 export async function GET() {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "Please log in before viewing the catalog." },
+      { status: 401 },
+    );
+  }
+
   const books = await prisma.book.findMany({
     orderBy: [{ title: "asc" }, { author: "asc" }],
   });

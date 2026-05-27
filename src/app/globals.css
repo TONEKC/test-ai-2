@@ -1,13 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f3ead7;
-  --foreground: #1d1710;
-  --library-wood: #24160f;
-  --library-ink: #1d1710;
-  --library-gold: #b88a3a;
-  --library-green: #174a3a;
+  --background: #0f0a12;
+  --foreground: #f7e9c8;
+  --library-wood: #1b0f0a;
+  --library-ink: #24160f;
+  --library-gold: #d8a94f;
+  --library-green: #0f4a3a;
   --library-burgundy: #6f2434;
+  --parchment: #f5e5bd;
+  --parchment-deep: #dfc28b;
 }
 
 @theme inline {
@@ -18,15 +20,35 @@
 
 body {
   background:
-    linear-gradient(90deg, rgba(36, 22, 15, 0.055) 1px, transparent 1px),
-    linear-gradient(180deg, #f8f1e4 0%, var(--background) 46%, #eadcc3 100%);
-  background-size: 28px 28px, auto;
+    radial-gradient(circle at 12% 8%, rgba(216, 169, 79, 0.28), transparent 18rem),
+    radial-gradient(circle at 85% 12%, rgba(31, 106, 84, 0.35), transparent 20rem),
+    radial-gradient(circle at 65% 82%, rgba(111, 36, 52, 0.28), transparent 24rem),
+    repeating-linear-gradient(90deg, rgba(216, 169, 79, 0.05) 0 1px, transparent 1px 64px),
+    linear-gradient(180deg, #07050a 0%, #160d1d 42%, #1d110c 100%);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
 
 main {
-  background: linear-gradient(180deg, rgba(36, 22, 15, 0.08), transparent 260px);
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(255, 227, 152, 0.1), transparent 18rem),
+    radial-gradient(circle at 50% 0%, rgba(255, 242, 184, 0.14), transparent 22rem);
+}
+
+main::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 15%, rgba(255, 220, 126, 0.85) 0 2px, transparent 5px),
+    radial-gradient(circle at 72% 20%, rgba(255, 220, 126, 0.75) 0 2px, transparent 5px),
+    radial-gradient(circle at 44% 11%, rgba(255, 220, 126, 0.65) 0 1px, transparent 4px),
+    radial-gradient(circle at 88% 55%, rgba(255, 220, 126, 0.55) 0 1px, transparent 4px);
+  filter: drop-shadow(0 0 12px rgba(255, 210, 106, 0.85));
+  opacity: 0.72;
 }
 
 button,
@@ -37,4 +59,77 @@ input {
 ::selection {
   background: var(--library-gold);
   color: white;
+}
+
+.bg-white {
+  background:
+    linear-gradient(135deg, rgba(255, 252, 235, 0.96), rgba(231, 201, 139, 0.94)) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 246, 201, 0.65),
+    0 18px 42px rgba(0, 0, 0, 0.28) !important;
+}
+
+.bg-slate-50 {
+  background: rgba(255, 246, 220, 0.72) !important;
+}
+
+.border-slate-200,
+.border-slate-300 {
+  border-color: rgba(184, 138, 58, 0.62) !important;
+}
+
+.text-slate-950 {
+  color: #21140d !important;
+}
+
+.text-slate-700,
+.text-slate-600,
+.text-slate-500 {
+  color: #5c4324 !important;
+}
+
+.bg-slate-950 {
+  background: linear-gradient(135deg, #21140d, #0f4a3a) !important;
+}
+
+.bg-emerald-700,
+.bg-amber-700 {
+  background: linear-gradient(135deg, #0f4a3a, #1f6a54) !important;
+  border: 1px solid rgba(216, 169, 79, 0.75);
+  box-shadow: 0 0 18px rgba(216, 169, 79, 0.22);
+}
+
+.text-amber-700,
+.text-amber-800,
+.text-emerald-700 {
+  color: #8a5c16 !important;
+}
+
+nav {
+  border-color: rgba(216, 169, 79, 0.55) !important;
+}
+
+nav > a:first-child {
+  color: #ffe6a6 !important;
+  text-shadow: 0 0 18px rgba(216, 169, 79, 0.95);
+}
+
+h1 {
+  color: #ffe7b0 !important;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3), 0 0 28px rgba(216, 169, 79, 0.36);
+}
+
+.bg-white h1 {
+  color: #21140d !important;
+  text-shadow: none;
+}
+
+section h1 + p,
+section > p {
+  color: #f7e9c8 !important;
+}
+
+.bg-white p,
+.bg-white section > p {
+  color: #5c4324 !important;
 }
